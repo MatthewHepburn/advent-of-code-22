@@ -1,6 +1,5 @@
 use std::env;
 use std::fs;
-use core::str::Chars;
 use core::str::Lines;
 use std::collections::HashMap;
 
@@ -20,12 +19,13 @@ fn main() {
 }
 
 type ResultOrErr<X> = Result<X, &'static str>;
+#[derive(Clone,Copy)]
 struct Rucksack<'a> {
     pouch_size: usize,
-    contents: Chars<'a>
+    contents: &'a str
 }
 type ItemType = char;
-type ElfGroup<'a> = Vec<Rucksack<'a>>;
+type ElfGroup<'a> = [Rucksack<'a>; 3];
 
 
 fn get_incorrect_item_type(rucksack: Rucksack) -> ResultOrErr<ItemType>
@@ -33,7 +33,7 @@ fn get_incorrect_item_type(rucksack: Rucksack) -> ResultOrErr<ItemType>
     let mut seen: HashMap<ItemType, bool> = HashMap::new();
     let mut index = 0;
 
-    for item in rucksack.contents {
+    for item in rucksack.contents.chars() {
         if index < rucksack.pouch_size {
             // We're in the first pouch - record items seen
             seen.insert(item, true);
@@ -49,23 +49,23 @@ fn get_incorrect_item_type(rucksack: Rucksack) -> ResultOrErr<ItemType>
     return Err("No duplicate item found!");
 }
 
-fn get_common_item_type(mut elf_group: ElfGroup) -> ResultOrErr<ItemType>
+fn get_common_item_type(elf_group: ElfGroup) -> ResultOrErr<ItemType>
 {
     let mut seen: HashMap<ItemType, i32> = HashMap::new();
 
-    for item in elf_group.pop().unwrap().contents {
+    for item in (&elf_group[0]).contents.chars() {
         // Record all items the first elf has
         seen.insert(item, 1);
     }
 
-    for item in elf_group.pop().unwrap().contents {
+    for item in (&elf_group[1]).contents.chars() {
         // Record all items common to first and second elf
         if seen.contains_key(&item) {
             seen.insert(item, 2);
         }
     }
 
-    for item in elf_group.pop().unwrap().contents {
+    for item in (&elf_group[2]).contents.chars() {
         if seen.get(&item) == Some(&2)  {
             // Item is common to all three elfs
             return Ok(item);
@@ -95,7 +95,7 @@ fn parse_input_as_rucksacks(input: Lines) -> Vec<Rucksack>
         if line == "" {
             continue
         }
-        let rucksack = Rucksack{contents: line.chars(), pouch_size: line.len() / 2};
+        let rucksack = Rucksack{contents: line, pouch_size: line.len() / 2};
         output.push(rucksack);
     }
 
@@ -121,15 +121,15 @@ fn solve_b() -> ResultOrErr<i32> {
     let rucksacks = parse_input_as_rucksacks(input.lines());
     let mut elf_groups : Vec<ElfGroup> = Vec::new();
 
-    let mut current_group : Vec<Rucksack> = Vec::new();
+    let mut current_group : [Rucksack; 3] = [Rucksack{contents: "", pouch_size: 0}; 3];
     let mut current_group_size = 0;
     for rucksack in rucksacks {
-        current_group.push(rucksack);
+        current_group[current_group_size] = rucksack;
         current_group_size += 1;
 
         if current_group_size == 3 {
             elf_groups.push(current_group);
-            current_group = Vec::new();
+            current_group = [Rucksack{contents: "", pouch_size: 0}; 3];
             current_group_size = 0;
         }
     }

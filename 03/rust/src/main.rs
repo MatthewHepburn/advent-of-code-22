@@ -22,6 +22,8 @@ struct Rucksack<'a> {
     contents: Chars<'a>
 }
 type ItemType = char;
+type ElfGroup<'a> = Vec<Rucksack<'a>>;
+
 
 fn get_incorrect_item_type(mut rucksack: Rucksack) -> ItemType
 {
@@ -42,6 +44,33 @@ fn get_incorrect_item_type(mut rucksack: Rucksack) -> ItemType
 
     panic!("No duplicate item found!")
 }
+
+fn get_common_item_type(mut elf_group: ElfGroup) -> ItemType
+{
+    let mut seen: HashMap<ItemType, i32> = HashMap::new();
+
+    for item in elf_group.pop().unwrap().contents {
+        // Record all items the first elf has
+        seen.insert(item, 1);
+    }
+
+    for item in elf_group.pop().unwrap().contents {
+        // Record all items common to first and second elf
+        if seen.contains_key(&item) {
+            seen.insert(item, 2);
+        }
+    }
+
+    for item in elf_group.pop().unwrap().contents {
+        if seen.get(&item) == Some(&2)  {
+            // Item is common to all three elfs
+            return item;
+        }
+    }
+
+    panic!("No duplicate item found!")
+}
+
 
 fn get_item_type_priority(item_type: ItemType) -> i32
 {
@@ -84,7 +113,30 @@ fn solve_a() -> i32 {
 }
 
 fn solve_b() -> i32 {
-    return 2;
+    let input: String = load_input();
+    let rucksacks = parse_input_as_rucksacks(input.lines());
+    let mut elf_groups : Vec<ElfGroup> = Vec::new();
+
+    let mut current_group : Vec<Rucksack> = Vec::new();
+    let mut current_group_size = 0;
+    for rucksack in rucksacks {
+        current_group.push(rucksack);
+        current_group_size += 1;
+
+        if current_group_size == 3 {
+            elf_groups.push(current_group);
+            current_group = Vec::new();
+            current_group_size = 0;
+        }
+    }
+
+    let mut priority_sum = 0;
+    for elf_group in elf_groups {
+        let item_type = get_common_item_type(elf_group);
+        priority_sum += get_item_type_priority(item_type);
+    }
+
+    return priority_sum;
 }
 
 fn is_example_mode() -> bool {

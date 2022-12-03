@@ -6,14 +6,16 @@ use std::collections::HashMap;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args[1] == "--solve-a" {
-        let solution = solve_a();
-        println!("{}", solution)
-    } else if args[1] == "--solve-b" {
-        let solution = solve_b();
-        println!("{}", solution)
-    } else {
-        println!("Pass either --solve-a or --solve-b")
+    // WTF this even means, I have no idea. But it works!
+    let result = match &(&args[1])[..] {
+        "--solve-a" => solve_a(),
+        "--solve-b" => solve_b(),
+        _ => panic!("Must provide --solve-a or --solve-b as first arg")
+    };
+
+    match result {
+        Ok(val) => println!("{}", val),
+        Err(e) => panic!("{}", e)
     }
 }
 
@@ -98,7 +100,7 @@ fn parse_input_as_rucksacks(input: Lines) -> Vec<Rucksack>
     return output;
 }
 
-fn solve_a() -> i32 {
+fn solve_a() -> Result<i32, &'static str> {
     let input: String = load_input();
     let rucksacks = parse_input_as_rucksacks(input.lines());
 
@@ -109,10 +111,10 @@ fn solve_a() -> i32 {
         priority_sum += get_item_type_priority(item_type);
     }
 
-    return priority_sum;
+    return Ok(priority_sum);
 }
 
-fn solve_b() -> i32 {
+fn solve_b() -> Result<i32, &'static str> {
     let input: String = load_input();
     let rucksacks = parse_input_as_rucksacks(input.lines());
     let mut elf_groups : Vec<ElfGroup> = Vec::new();
@@ -136,7 +138,7 @@ fn solve_b() -> i32 {
         priority_sum += get_item_type_priority(item_type);
     }
 
-    return priority_sum;
+    return Ok(priority_sum);
 }
 
 fn is_example_mode() -> bool {

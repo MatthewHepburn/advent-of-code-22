@@ -28,21 +28,22 @@ type ItemType = char;
 type ElfGroup<'a> = Vec<Rucksack<'a>>;
 
 
-fn get_incorrect_item_type(mut rucksack: Rucksack) -> ResultOrErr<ItemType>
+fn get_incorrect_item_type(rucksack: Rucksack) -> ResultOrErr<ItemType>
 {
     let mut seen: HashMap<ItemType, bool> = HashMap::new();
+    let mut index = 0;
 
-    for _i in 0..rucksack.pouch_size {
-        // Record items seen in first pouch
-        let item = rucksack.contents.next().unwrap();
-        seen.insert(item, true);
-    }
-
-    for char in rucksack.contents {
-        // Look for items in the second pouch that we saw in the first
-        if seen.contains_key(&char) {
-            return Ok(char);
+    for item in rucksack.contents {
+        if index < rucksack.pouch_size {
+            // We're in the first pouch - record items seen
+            seen.insert(item, true);
+        } else {
+            // We're in the second pouch - look for items that we saw in the first
+            if seen.contains_key(&item) {
+                return Ok(item);
+            }
         }
+        index += 1;
     }
 
     return Err("No duplicate item found!");

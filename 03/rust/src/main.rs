@@ -19,6 +19,7 @@ fn main() {
     }
 }
 
+type ResultOrErr<X> = Result<X, &'static str>;
 struct Rucksack<'a> {
     pouch_size: usize,
     contents: Chars<'a>
@@ -27,7 +28,7 @@ type ItemType = char;
 type ElfGroup<'a> = Vec<Rucksack<'a>>;
 
 
-fn get_incorrect_item_type(mut rucksack: Rucksack) -> ItemType
+fn get_incorrect_item_type(mut rucksack: Rucksack) -> ResultOrErr<ItemType>
 {
     let mut seen: HashMap<ItemType, bool> = HashMap::new();
 
@@ -40,14 +41,14 @@ fn get_incorrect_item_type(mut rucksack: Rucksack) -> ItemType
     for char in rucksack.contents {
         // Look for items in the second pouch that we saw in the first
         if seen.contains_key(&char) {
-            return char
+            return Ok(char);
         }
     }
 
-    panic!("No duplicate item found!")
+    return Err("No duplicate item found!");
 }
 
-fn get_common_item_type(mut elf_group: ElfGroup) -> ItemType
+fn get_common_item_type(mut elf_group: ElfGroup) -> ResultOrErr<ItemType>
 {
     let mut seen: HashMap<ItemType, i32> = HashMap::new();
 
@@ -66,11 +67,11 @@ fn get_common_item_type(mut elf_group: ElfGroup) -> ItemType
     for item in elf_group.pop().unwrap().contents {
         if seen.get(&item) == Some(&2)  {
             // Item is common to all three elfs
-            return item;
+            return Ok(item);
         }
     }
 
-    panic!("No duplicate item found!")
+    return Err("No duplicate item found!")
 }
 
 
@@ -100,21 +101,21 @@ fn parse_input_as_rucksacks(input: Lines) -> Vec<Rucksack>
     return output;
 }
 
-fn solve_a() -> Result<i32, &'static str> {
+fn solve_a() -> ResultOrErr<i32> {
     let input: String = load_input();
     let rucksacks = parse_input_as_rucksacks(input.lines());
 
     let mut priority_sum = 0;
 
     for rucksack in rucksacks {
-        let item_type = get_incorrect_item_type(rucksack);
+        let item_type = get_incorrect_item_type(rucksack)?;
         priority_sum += get_item_type_priority(item_type);
     }
 
     return Ok(priority_sum);
 }
 
-fn solve_b() -> Result<i32, &'static str> {
+fn solve_b() -> ResultOrErr<i32> {
     let input: String = load_input();
     let rucksacks = parse_input_as_rucksacks(input.lines());
     let mut elf_groups : Vec<ElfGroup> = Vec::new();
@@ -134,7 +135,7 @@ fn solve_b() -> Result<i32, &'static str> {
 
     let mut priority_sum = 0;
     for elf_group in elf_groups {
-        let item_type = get_common_item_type(elf_group);
+        let item_type = get_common_item_type(elf_group)?;
         priority_sum += get_item_type_priority(item_type);
     }
 

@@ -15,21 +15,21 @@ build_optimised:
 
 .PHONY: part_a_example
 part_a_example: build ## Solve part A with example input
-	AOC_EXAMPLE_MODE=1 target/debug/solution --solve-a
+	target/debug/solution --solve-a ../exampleInput.txt
 
 .PHONY: part_a
 part_a: build_optimised ## Solve part A with real input
-	AOC_EXAMPLE_MODE=0 target/release/solution --solve-a
+	target/release/solution --solve-a ../input.txt
 
 .PHONY: part_b_example
 part_b_example: build ## Solve part B with example input
-	AOC_EXAMPLE_MODE=1 target/debug/solution --solve-b
+	target/debug/solution --solve-b ../exampleInput.txt
 
 .PHONY: part_b
 part_b: build_optimised ## Solve part B with real input
-	AOC_EXAMPLE_MODE=0 target/release/solution --solve-b
+	target/release/solution --solve-b ../input.txt
 
 .PHONY: time
 time: build_optimised
-	AOC_EXAMPLE_MODE=0 time target/release/solution --solve-a
-	AOC_EXAMPLE_MODE=0 time target/release/solution --solve-b
+	AOC_EXAMPLE_MODE=0 time target/release/solution --solve-a ../input.txt
+	AOC_EXAMPLE_MODE=0 time target/release/solution --solve-b ../input.txt

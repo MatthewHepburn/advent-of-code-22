@@ -5,10 +5,12 @@ use std::collections::HashMap;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    // WTF this even means, I have no idea. But it works!
+
+    let input_filename = &(&args[2])[..];
+
     let result = match &(&args[1])[..] {
-        "--solve-a" => solve_a(),
-        "--solve-b" => solve_b(),
+        "--solve-a" => solve_a(input_filename),
+        "--solve-b" => solve_b(input_filename),
         _ => panic!("Must provide --solve-a or --solve-b as first arg")
     };
 
@@ -18,7 +20,7 @@ fn main() {
     }
 }
 
-type ResultOrErr<X> = Result<X, &'static str>;
+type ResultOrErr<X> = Result<X, String>;
 #[derive(Clone,Copy)]
 struct Rucksack<'a> {
     pouch_size: usize,
@@ -46,7 +48,7 @@ fn get_incorrect_item_type(rucksack: Rucksack) -> ResultOrErr<ItemType>
         index += 1;
     }
 
-    return Err("No duplicate item found!");
+    return Err("No duplicate item found!".to_string());
 }
 
 fn get_common_item_type(elf_group: ElfGroup) -> ResultOrErr<ItemType>
@@ -72,7 +74,7 @@ fn get_common_item_type(elf_group: ElfGroup) -> ResultOrErr<ItemType>
         }
     }
 
-    return Err("No duplicate item found!")
+    return Err("No common item found!".to_string())
 }
 
 
@@ -102,8 +104,8 @@ fn parse_input_as_rucksacks(input: Lines) -> Vec<Rucksack>
     return output;
 }
 
-fn solve_a() -> ResultOrErr<i32> {
-    let input: String = load_input();
+fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
+    let input: String = load_input(input_filename)?;
     let rucksacks = parse_input_as_rucksacks(input.lines());
 
     let mut priority_sum = 0;
@@ -116,8 +118,8 @@ fn solve_a() -> ResultOrErr<i32> {
     return Ok(priority_sum);
 }
 
-fn solve_b() -> ResultOrErr<i32> {
-    let input: String = load_input();
+fn solve_b(input_filename: &str) -> ResultOrErr<i32> {
+    let input: String = load_input(input_filename)?;
     let rucksacks = parse_input_as_rucksacks(input.lines());
     let mut elf_groups : Vec<ElfGroup> = Vec::new();
 
@@ -143,19 +145,9 @@ fn solve_b() -> ResultOrErr<i32> {
     return Ok(priority_sum);
 }
 
-fn is_example_mode() -> bool {
-    let example_mode = env::var("AOC_EXAMPLE_MODE");
-    return match example_mode {
-        Err(_e) => false,
-        Ok(val) => val == "1"
+fn load_input(input_filename: &str) -> ResultOrErr<String> {
+    return match fs::read_to_string(input_filename) {
+        Ok(x) => Ok(x),
+        Err(x) => Err(x.to_string())
     };
-}
-
-fn load_input() -> String {
-    let filename = if is_example_mode() { "exampleInput.txt" } else { "input.txt" };
-    let mut path = String::from("../");
-    path.push_str(filename);
-
-    return fs::read_to_string(path)
-        .expect("Something went wrong reading the file");
 }

@@ -9,18 +9,22 @@ help: ## Shows this help page
 build:
 	cargo build
 
+.PHONY: build_optimised
+build_optimised:
+	cargo build --release
+
 .PHONY: part_a_example
 part_a_example: build ## Solve part A with example input
 	AOC_EXAMPLE_MODE=1 target/debug/solution --solve-a
 
 .PHONY: part_a
-part_a: build ## Solve part A with real input
-	AOC_EXAMPLE_MODE=0 target/debug/solution --solve-a
+part_a: build_optimised ## Solve part A with real input
+	AOC_EXAMPLE_MODE=0 target/release/solution --solve-a
 
 .PHONY: part_b_example
 part_b_example: build ## Solve part B with example input
 	AOC_EXAMPLE_MODE=1 target/debug/solution --solve-b
 
 .PHONY: part_b
-part_b: build ## Solve part B with real input
-	AOC_EXAMPLE_MODE=0 target/debug/solution --solve-b
+part_b: build_optimised ## Solve part B with real input
+	AOC_EXAMPLE_MODE=0 target/release/solution --solve-b

@@ -143,11 +143,10 @@ fn solve_b() -> Result<i32, &'static str> {
 
 fn is_example_mode() -> bool {
     let example_mode = env::var("AOC_EXAMPLE_MODE");
-    if example_mode.is_err() {
-        return false;
-    }
-
-    return example_mode.unwrap() == "1"
+    return match example_mode {
+        Err(_e) => false,
+        Ok(val) => val == "1"
+    };
 }
 
 fn load_input() -> String {

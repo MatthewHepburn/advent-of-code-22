@@ -121,25 +121,20 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
 fn solve_b(input_filename: &str) -> ResultOrErr<i32> {
     let input: String = load_input(input_filename)?;
     let rucksacks = parse_input_as_rucksacks(input.lines());
-    let mut elf_groups : Vec<ElfGroup> = Vec::new();
 
-    let mut current_group : [Rucksack; 3] = [Rucksack{contents: "", pouch_size: 0}; 3];
+    let mut elf_group : ElfGroup = [Rucksack{contents: "", pouch_size: 0}; 3];
     let mut current_group_size = 0;
+    let mut priority_sum = 0;
     for rucksack in rucksacks {
-        current_group[current_group_size] = rucksack;
+        elf_group[current_group_size] = rucksack;
         current_group_size += 1;
 
         if current_group_size == 3 {
-            elf_groups.push(current_group);
-            current_group = [Rucksack{contents: "", pouch_size: 0}; 3];
+            let item_type = get_common_item_type(elf_group)?;
+            priority_sum += get_item_type_priority(item_type);
+
             current_group_size = 0;
         }
-    }
-
-    let mut priority_sum = 0;
-    for elf_group in elf_groups {
-        let item_type = get_common_item_type(elf_group)?;
-        priority_sum += get_item_type_priority(item_type);
     }
 
     return Ok(priority_sum);

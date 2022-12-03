@@ -28,3 +28,8 @@ part_b_example: build ## Solve part B with example input
 .PHONY: part_b
 part_b: build_optimised ## Solve part B with real input
 	AOC_EXAMPLE_MODE=0 target/release/solution --solve-b
+
+.PHONY: time
+time: build_optimised
+	AOC_EXAMPLE_MODE=0 time target/release/solution --solve-a
+	AOC_EXAMPLE_MODE=0 time target/release/solution --solve-b

@@ -30,8 +30,22 @@ impl ElfAssignment {
         return self.lower <= other.lower && self.upper >= other.upper;
     }
 
-    fn output(&self) {
-        println!("{}-{}", self.lower, self.upper);
+    fn includes(&self, section:i32) -> bool {
+        return self.lower <= section && self.upper >= section;
+    }
+
+    fn intersects(&self, other: &ElfAssignment) -> bool {
+        if self.includes(other.lower) || self.includes(other.upper) {
+            return true;
+        }
+        if self.fully_contains(other) {
+            return true
+        }
+        if other.fully_contains(self) {
+            return true
+        }
+
+        return false;
     }
 }
 
@@ -70,10 +84,7 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
     let elf_pairs = parse_input(input.lines());
 
     let mut fully_contained = 0;
-
     for elf_pair in elf_pairs {
-        print!("{}", "Elf 1: ");
-        elf_pair.assignments[0].output();
         if elf_pair.assignments[0].fully_contains(&elf_pair.assignments[1]) ||
             elf_pair.assignments[1].fully_contains(&elf_pair.assignments[0]) {
             fully_contained += 1;
@@ -83,8 +94,18 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
     return Ok(fully_contained);
 }
 
-fn solve_b(_input_filename: &str) -> ResultOrErr<i32> {
-    return Err("Not implemented".to_string())
+fn solve_b(input_filename: &str) -> ResultOrErr<i32> {
+    let input: String = load_input(input_filename)?;
+    let elf_pairs = parse_input(input.lines());
+
+    let mut overlapping_pairs = 0;
+    for elf_pair in elf_pairs {
+        if elf_pair.assignments[0].intersects(&elf_pair.assignments[1]) {
+            overlapping_pairs += 1;
+        }
+    }
+
+    return Ok(overlapping_pairs);
 }
 
 fn load_input(input_filename: &str) -> ResultOrErr<String> {

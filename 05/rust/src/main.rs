@@ -57,6 +57,12 @@ impl Stack {
         return Ok(output);
     }
 
+    fn take_top_n_as_group(&mut self, n: i32) -> ResultOrErr<Vec<Crate>> {
+        let mut output = self.take_top_n_one_by_one(n)?;
+        output.reverse();
+        return Ok(output);
+    }
+
     fn add_crate(&mut self, new_crate: Crate) {
         self.crates.push(new_crate);
     }
@@ -121,7 +127,7 @@ fn parse_problem(input: String) -> ResultOrErr<Problem>
             let string_pos = 1 + (stack_index * 4);
             let this_crate = line.chars().collect::<Vec<char>>()[string_pos];
             if this_crate != ' ' {
-                stack.crates.push(this_crate);
+                stack.add_crate(this_crate);
             }
             stack_index += 1;
         }
@@ -141,7 +147,7 @@ fn make_move_9000(elf_move: &Move, cargo_area: &mut CargoArea) -> ResultOrErr<bo
 
     for moved_crate in from_stack.take_top_n_one_by_one(elf_move.crate_count)? {
         let to_stack = &mut cargo_area.stacks[elf_move.to_stack - 1];
-        to_stack.crates.push(moved_crate);
+        to_stack.add_crate(moved_crate);
     }
 
     cargo_area.output();
@@ -151,18 +157,12 @@ fn make_move_9000(elf_move: &Move, cargo_area: &mut CargoArea) -> ResultOrErr<bo
 
 fn make_move_9001(elf_move: &Move, cargo_area: &mut CargoArea) -> ResultOrErr<bool> {
     elf_move.output();
-    let mut crate_count = 0;
-    let mut crates: Vec<Crate> = Vec::new();
-    while crate_count < elf_move.crate_count {
-        let this_crate = cargo_area.stacks[elf_move.from_stack - 1].crates.pop().ok_or("Could not pop".to_string())?;
-        crates.push(this_crate);
-        crate_count += 1;
-    }
 
-    crates.reverse();
+    let from_stack = &mut cargo_area.stacks[elf_move.from_stack - 1];
 
-    for this_crate in crates {
-        cargo_area.stacks[elf_move.to_stack - 1].crates.push(this_crate);
+    for moved_crate in from_stack.take_top_n_as_group(elf_move.crate_count)? {
+        let to_stack = &mut cargo_area.stacks[elf_move.to_stack - 1];
+        to_stack.add_crate(moved_crate);
     }
 
     cargo_area.output();

@@ -128,7 +128,7 @@ fn parse_problem(input: String) -> ResultOrErr<Problem>
     return Ok(problem);
 }
 
-fn make_move(elf_move: &Move, cargo_area: &mut CargoArea) -> ResultOrErr<bool> {
+fn make_move_9000(elf_move: &Move, cargo_area: &mut CargoArea) -> ResultOrErr<bool> {
     elf_move.output();
     let mut move_count = 0;
     while move_count < elf_move.crate_count {
@@ -142,6 +142,28 @@ fn make_move(elf_move: &Move, cargo_area: &mut CargoArea) -> ResultOrErr<bool> {
     return Ok(true)
 }
 
+fn make_move_9001(elf_move: &Move, cargo_area: &mut CargoArea) -> ResultOrErr<bool> {
+    elf_move.output();
+    let mut crate_count = 0;
+    let mut crates: Vec<Crate> = Vec::new();
+    while crate_count < elf_move.crate_count {
+        let this_crate = cargo_area.stacks[elf_move.from_stack - 1].crates.pop().ok_or("Could not pop".to_string())?;
+        crates.push(this_crate);
+        crate_count += 1;
+    }
+
+    crates.reverse();
+
+    for this_crate in crates {
+        cargo_area.stacks[elf_move.to_stack - 1].crates.push(this_crate);
+    }
+
+    cargo_area.output();
+
+    return Ok(true)
+}
+
+
 fn solve_a(input_filename: &str) -> ResultOrErr<String> {
     let input: String = load_input(input_filename)?;
     let mut problem = parse_problem(input)?;
@@ -149,7 +171,7 @@ fn solve_a(input_filename: &str) -> ResultOrErr<String> {
     problem.cargo_area.output();
 
     for elf_move in problem.move_list {
-        make_move(&elf_move, &mut problem.cargo_area)?;
+        make_move_9000(&elf_move, &mut problem.cargo_area)?;
     }
 
     let mut output: String = "".to_string();
@@ -160,8 +182,22 @@ fn solve_a(input_filename: &str) -> ResultOrErr<String> {
     return Ok(output);
 }
 
-fn solve_b(_input_filename: &str) -> ResultOrErr<String> {
-    return Err("Not implemented".to_string())
+fn solve_b(input_filename: &str) -> ResultOrErr<String> {
+    let input: String = load_input(input_filename)?;
+    let mut problem = parse_problem(input)?;
+
+    problem.cargo_area.output();
+
+    for elf_move in problem.move_list {
+        make_move_9001(&elf_move, &mut problem.cargo_area)?;
+    }
+
+    let mut output: String = "".to_string();
+    for stack in problem.cargo_area.stacks {
+        output.push(stack.take_top()?)
+    }
+
+    return Ok(output);
 }
 
 fn load_input(input_filename: &str) -> ResultOrErr<String> {

@@ -44,14 +44,20 @@ impl CargoArea {
 }
 
 impl Stack {
-    fn take_top(mut self) -> ResultOrErr<Crate> {
-        return match self.crates.pop() {
-            Some(x) => Ok(x),
-            None => Err("Tried to take from empty stack".to_string())
-        };
+    fn take_top_n_one_by_one(&mut self, n: i32) -> ResultOrErr<Vec<Crate>> {
+        let mut output : Vec<Crate> = Vec::new();
+        for _i in 0..n {
+            let this_crate = match self.crates.pop() {
+                Some(x) => Ok(x),
+                None => Err("Tried to take from empty stack".to_string())
+            }?;
+            output.push(this_crate);
+        }
+        assert!(n == output.len().try_into().unwrap());
+        return Ok(output);
     }
 
-    fn add_crate(mut self, new_crate: Crate) {
+    fn add_crate(&mut self, new_crate: Crate) {
         self.crates.push(new_crate);
     }
 }
@@ -130,11 +136,12 @@ fn parse_problem(input: String) -> ResultOrErr<Problem>
 
 fn make_move_9000(elf_move: &Move, cargo_area: &mut CargoArea) -> ResultOrErr<bool> {
     elf_move.output();
-    let mut move_count = 0;
-    while move_count < elf_move.crate_count {
-        let this_crate = cargo_area.stacks[elf_move.from_stack - 1].crates.pop().ok_or("Could not pop".to_string())?;
-        cargo_area.stacks[elf_move.to_stack - 1].crates.push(this_crate);
-        move_count += 1;
+
+    let from_stack = &mut cargo_area.stacks[elf_move.from_stack - 1];
+
+    for moved_crate in from_stack.take_top_n_one_by_one(elf_move.crate_count)? {
+        let to_stack = &mut cargo_area.stacks[elf_move.to_stack - 1];
+        to_stack.crates.push(moved_crate);
     }
 
     cargo_area.output();
@@ -175,8 +182,8 @@ fn solve_a(input_filename: &str) -> ResultOrErr<String> {
     }
 
     let mut output: String = "".to_string();
-    for stack in problem.cargo_area.stacks {
-        output.push(stack.take_top()?)
+    for mut stack in problem.cargo_area.stacks {
+        output.push(stack.take_top_n_one_by_one(1)?[0])
     }
 
     return Ok(output);
@@ -193,8 +200,8 @@ fn solve_b(input_filename: &str) -> ResultOrErr<String> {
     }
 
     let mut output: String = "".to_string();
-    for stack in problem.cargo_area.stacks {
-        output.push(stack.take_top()?)
+    for mut stack in problem.cargo_area.stacks {
+        output.push(stack.take_top_n_one_by_one(1)?[0])
     }
 
     return Ok(output);

@@ -42,8 +42,24 @@ fn solve_a(input_filename: &str) -> ResultOrErr<usize> {
 }
 
 fn solve_b(input_filename: &str) -> ResultOrErr<usize> {
-    return Err("Not implemented".to_string())
+    let input_string = load_input(input_filename)?;
+    let input: &str = input_string.split_whitespace().next().unwrap();
+    let chars: Vec<char> = input.chars().collect();
+    for i in 14..input.len() {
+        let slice = &chars[i - 14..i];
+        assert!(slice.len() == 14);
+        let mut seen: HashMap<char, bool> = HashMap::new();
+        for char in slice {
+            seen.insert(*char, true);
+        }
+        if seen.len() == 14 {
+            return Ok(i);
+        }
+    }
+
+    return Err("No start of message found".to_string());
 }
+
 
 fn load_input(input_filename: &str) -> ResultOrErr<String> {
     return match fs::read_to_string(input_filename) {

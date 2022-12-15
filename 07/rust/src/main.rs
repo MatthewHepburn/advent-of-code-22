@@ -296,8 +296,43 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
 }
 
 fn solve_b(input_filename: &str) -> ResultOrErr<i32> {
-    return Err("Not implemented".to_string());
+    let input_string = load_input(input_filename)?;
+    let commands: Vec<Command> = parse_commands(input_string)?;
+
+    let start_dir: Dir = Dir{files: HashMap::new()};
+    let mut dirs: HashMap<String, Dir> = HashMap::new();
+    dirs.insert("/".to_string(), start_dir);
+    let mut file_system: FileSystem = FileSystem {
+        seen_files: HashMap::new(),
+        current_position: Position {position_parts: Vec::new()},
+        dirs
+    };
+
+    for command in commands {
+        file_system.process_command(&command)
+    }
+
+    let filesystem_size = 70000000;
+    let required_space = 30000000;
+    let root_dir = file_system.dirs.get("/").unwrap();
+    let used_space = file_system.get_dir_size("/".to_string(), root_dir);
+    let remaining_space = filesystem_size - used_space;
+    let must_free = required_space - remaining_space;
+
+    println!("Must free {}", must_free);
+
+    let mut best_dir_size = required_space;
+    for (path,dir) in file_system.dirs.iter() {
+        let dir_size = file_system.get_dir_size(path.clone(), dir);
+        if dir_size > must_free && dir_size < best_dir_size {
+            best_dir_size = dir_size;
+            println!("New best dir size {} for dir {}", best_dir_size, path)
+        }
+    }
+
+    return Ok(best_dir_size);
 }
+
 
 
 fn load_input(input_filename: &str) -> ResultOrErr<String> {

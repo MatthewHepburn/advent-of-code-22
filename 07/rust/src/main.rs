@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::env;
 use std::fs;
 use std::collections::HashMap;
@@ -23,10 +25,25 @@ type ResultOrErr<X> = Result<X, String>;
 
 struct FileSystem {
     current_position: Position,
-    seen_files: HashMap<String, i32>
+    seen_files: HashMap<String, i32>,
+    dirs: HashMap<String, Dir>
 }
 
 impl FileSystem {
+    fn get_current_dir_struct(self: &mut FileSystem) -> &mut Dir {
+        let mut path = "".to_string();
+        self.current_position.as_string(&mut path);
+
+        let dir= self.dirs.get_mut(&path);
+        return match dir {
+            Some(dir) => dir,
+            None => {
+                println!("Error reading path '{}'", path);
+                panic!("Logic error - directory not found")
+            }
+        }
+    }
+
     fn process_command(self: &mut FileSystem, command: &Command) {
         match command {
             Command::Move(x) => self.do_move(x),
@@ -35,7 +52,45 @@ impl FileSystem {
     }
 
     fn do_move(self: &mut FileSystem, move_command: &MoveCommand) {
-        self.current_position.chdir(move_command);
+        self.chdir(move_command);
+    }
+
+    fn go_up(self: &mut FileSystem) {
+        self.current_position.position_parts.pop();
+    }
+
+    fn go_to_root(self: &mut FileSystem) {
+        self.current_position.position_parts.clear()
+    }
+
+    fn descend_into(self: &mut FileSystem, dir: &String) {
+        self.current_position.position_parts.push(dir.clone());
+
+        let mut path = "".to_string();
+        self.current_position.as_string(&mut path);
+        match self.dirs.get_mut(&path) {
+            Some(_) => (),
+            None => {
+                let new_dir = Dir{files: HashMap::new()};
+                self.dirs.insert(path, new_dir);
+                return ();
+            }
+        }
+    }
+
+    fn chdir(self: &mut FileSystem, command: &MoveCommand) {
+        println!("$ cd {}", command.target);
+        if command.target == ".." {
+            self.go_up()
+        } else if command.target == "/" {
+            self.go_to_root()
+        } else {
+            self.descend_into(&command.target)
+        }
+
+        let mut new_position: String = "".to_string();
+        self.current_position.as_string(&mut new_position);
+        println!("New location = {}", new_position)
     }
 
     fn do_list(self: &mut FileSystem, list_command: &ListCommand) {
@@ -51,21 +106,70 @@ impl FileSystem {
                         absolute_filename.push_str("/");
                     }
                     absolute_filename.push_str(name);
-                    self.see_file(absolute_filename, *size)
+                    self.see_file(name.clone(), absolute_filename, *size)
                 }
             }
         }
     }
 
-    fn see_file(self: &mut FileSystem, absolute_filename: String, size: i32) {
+    fn see_file(self: &mut FileSystem, relative_filename: String, absolute_filename: String, size: i32) {
         println!("Saw file '{}' with size {}", absolute_filename, size);
         self.seen_files.insert(absolute_filename, size);
+        self.get_current_dir_struct().files.insert(relative_filename, size);
     }
 
     fn seen_size(self: &FileSystem) -> i32 {
         let mut output = 0;
         for (file, size) in &self.seen_files {
             println!("Saw '{}' with size {}", file, size);
+            output += size;
+        }
+
+        return output;
+    }
+
+    fn seen_size_minus_big_dirs(self: &FileSystem) -> i32 {
+        let mut output = 0;
+        for (path, dir) in &self.dirs {
+            let mut size = self.get_dir_size(path.clone(), dir);
+
+            if size <= 100000 {
+                println!("Saw small dir '{}' with size {}", path, size);
+                output += size;
+            } else {
+                println!("Ignored big dir '{}' with size {}", path, size);
+            }
+        }
+
+        return output;
+    }
+
+    fn get_dir_size(self: &FileSystem, mut path: String, dir: &Dir) -> i32 {
+        let mut output = dir.get_direct_file_size();
+
+        path.push_str("/");
+        for (other_path, other_dir) in self.dirs.iter() {
+            if !other_path.starts_with(&path) {
+                continue;
+            }
+
+            println!("'{}' is a subdirectory of '{}'", other_path, path);
+
+            output += self.get_dir_size(other_path.clone(), &other_dir)
+        }
+
+        return output
+    }
+}
+
+struct Dir {
+    files: HashMap<String, i32>,
+}
+
+impl Dir {
+    fn get_direct_file_size(self: &Dir) -> i32 {
+        let mut output = 0;
+        for (_, size) in &self.files {
             output += size;
         }
 
@@ -78,33 +182,6 @@ struct Position {
 }
 
 impl Position {
-    fn go_up(self: &mut Position) {
-        self.position_parts.pop();
-    }
-
-    fn go_to_root(self: &mut Position) {
-        self.position_parts.clear()
-    }
-
-    fn descend_into(self: &mut Position, dir: &String) {
-        self.position_parts.push(dir.clone())
-    }
-
-    fn chdir(self: &mut Position, command: &MoveCommand) {
-        println!("$ cd {}", command.target);
-        if command.target == ".." {
-            self.go_up()
-        } else if command.target == "/" {
-            self.go_to_root()
-        } else {
-            self.descend_into(&command.target)
-        }
-
-        let mut new_position: String = "".to_string();
-        self.as_string(&mut new_position);
-        println!("New location = {}", new_position)
-    }
-
     fn as_string(self: &mut Position, output: &mut String) {
         output.clear();
         for part in self.position_parts.iter() {
@@ -184,16 +261,21 @@ fn parse_commands(input: String) -> ResultOrErr<Vec<Command>> {
 fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
     let input_string = load_input(input_filename)?;
     let commands: Vec<Command> = parse_commands(input_string)?;
+
+    let start_dir: Dir = Dir{files: HashMap::new()};
+    let mut dirs: HashMap<String, Dir> = HashMap::new();
+    dirs.insert("/".to_string(), start_dir);
     let mut file_system: FileSystem = FileSystem {
         seen_files: HashMap::new(),
-        current_position: Position {position_parts: Vec::new()}
+        current_position: Position {position_parts: Vec::new()},
+        dirs
     };
 
     for command in commands {
         file_system.process_command(&command)
     }
 
-    return Ok(file_system.seen_size());
+    return Ok(file_system.seen_size_minus_big_dirs());
 }
 
 fn solve_b(input_filename: &str) -> ResultOrErr<i32> {

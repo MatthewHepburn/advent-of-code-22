@@ -147,15 +147,22 @@ impl FileSystem {
     fn get_dir_size(self: &FileSystem, mut path: String, dir: &Dir) -> i32 {
         let mut output = dir.get_direct_file_size();
 
-        path.push_str("/");
+        if path != "/" {
+            path.push_str("/");
+        }
         for (other_path, other_dir) in self.dirs.iter() {
+            if other_path == "/" {
+                continue;
+            }
             if !other_path.starts_with(&path) {
                 continue;
             }
 
             println!("'{}' is a subdirectory of '{}'", other_path, path);
 
-            output += self.get_dir_size(other_path.clone(), &other_dir)
+            // Only count other dirs direct contents here - since we're doing a prefix search we'll
+            // also cover all of this dirs descendents
+            output += other_dir.get_direct_file_size()
         }
 
         return output
@@ -273,6 +280,16 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
 
     for command in commands {
         file_system.process_command(&command)
+    }
+
+    println!("-----FILE LISTING-----");
+    for (path, _) in file_system.seen_files.iter() {
+        println!("{}", path);
+    }
+
+    println!("-----DIR LISTING-----");
+    for (path,dir) in file_system.dirs.iter() {
+        println!("{} - {}", path, file_system.get_dir_size(path.clone(), dir));
     }
 
     return Ok(file_system.seen_size_minus_big_dirs());

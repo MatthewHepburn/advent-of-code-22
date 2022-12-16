@@ -99,6 +99,63 @@ impl Forest {
         }
     }
 
+    fn get_score(self: &mut Forest, row: usize, column: usize) -> i32 {
+        let ref tree: Tree = self.trees[row][column];
+        let mut score = 1;
+
+        // look left
+        let mut left_score = 0;
+        for column_offset in 1..column + 1 {
+            let this_column = column - column_offset;
+            let ref this_tree = self.trees[row][this_column];
+            left_score += 1;
+            if this_tree.height >= tree.height {
+                // view blocked, pack it in
+                break
+            }
+        }
+        score = score * left_score;
+
+        // look right
+        let mut right_score = 0;
+        for this_column in column + 1..self.columns as usize {
+            let ref this_tree = self.trees[row][this_column];
+            right_score += 1;
+            if this_tree.height >= tree.height {
+                // view blocked, pack it in
+                break
+            }
+        }
+        score = score * right_score;
+
+        // look up
+        let mut up_score = 0;
+        for row_offset in 1..row + 1 {
+            let this_row = row - row_offset;
+            let ref this_tree = self.trees[this_row][column];
+            up_score += 1;
+            if this_tree.height >= tree.height {
+                // view blocked, pack it in
+                break
+            }
+        }
+        score = score * up_score;
+
+        // look down
+        let mut down_score = 0;
+        for this_row in row + 1..self.rows as usize {
+            let ref this_tree = self.trees[this_row][column];
+            down_score += 1;
+            if this_tree.height >= tree.height {
+                // view blocked, pack it in
+                break
+            }
+        }
+        score = score * down_score;
+
+        return score;
+    }
+
     fn count_visible(self: &mut Forest) -> i32 {
         let mut visible = 0;
         for row in 0..self.rows {
@@ -178,7 +235,17 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
 }
 
 fn solve_b(input_filename: &str) -> ResultOrErr<i32> {
-    return Err("Not implemented".to_string());
+    let input_string = load_input(input_filename)?;
+    let mut forest: Forest = parse_forest(input_string)?;
+
+    let mut best_score = 0;
+    for row in 0..forest.rows {
+        for column in 0..forest.columns {
+            best_score = max(best_score, forest.get_score(row as usize, column as usize))
+        }
+    }
+
+    return Ok(best_score);
 }
 
 

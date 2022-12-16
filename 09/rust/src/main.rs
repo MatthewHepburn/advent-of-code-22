@@ -109,6 +109,63 @@ impl Rope {
     }
 }
 
+struct LongRope {
+    head: Position,
+    tails: Vec<Position>,
+}
+
+impl LongRope {
+    fn move_head(self: &mut LongRope, x_offset: i32, y_offset: i32) {
+        self.head.x += x_offset;
+        self.head.y += y_offset;
+    }
+
+    fn move_tails(self: &mut LongRope) {
+        let mut head = &self.head;
+        for tail in &mut self.tails {
+            let tail_to_head: Vector = tail.get_vector_from(&head);
+            if tail_to_head.x.abs() + tail_to_head.y.abs() < 2 {
+                // Too close to do anything
+                head = &&tail;
+                return;
+            }
+            if tail_to_head.y == 0 && tail_to_head.x == 2 {
+                tail.x += 1;
+            } else if tail_to_head.y == 0 && tail_to_head.x == -2 {
+                tail.x -= 1;
+            } else if tail_to_head.y == 2 && tail_to_head.x == 0 {
+                tail.y += 1;
+            } else if tail_to_head.y == -2 && tail_to_head.x == 0 {
+                tail.y -= 1;
+            }
+
+            if tail_to_head.x.abs() + tail_to_head.y.abs() < 3 {
+                // Too close to do anything - must be diagonally adjacent
+                head = tail;
+                continue;
+            }
+
+            // Check for diagonal moves
+            if tail_to_head.x > 0 && tail_to_head.y > 0 {
+                tail.x +=1;
+                tail.y +=1;
+            } else if tail_to_head.x > 0 && tail_to_head.y < 0 {
+                tail.x +=1;
+                tail.y -=1;
+            } else if tail_to_head.x < 0 && tail_to_head.y > 0 {
+                tail.x -=1;
+                tail.y +=1;
+            } else if tail_to_head.x < 0 && tail_to_head.y < 0 {
+                tail.x -=1;
+                tail.y -=1;
+            }
+
+            head = tail;
+        }
+    }
+}
+
+
 type Commands = Vec<Command>;
 enum Command {
     Up(i32),
@@ -213,7 +270,42 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
 }
 
 fn solve_b(input_filename: &str) -> ResultOrErr<i32> {
-    return Err("Not Implemented".to_string())
+    let input_string = load_input(input_filename)?;
+    let commands: Commands = parse_commands(input_string)?;
+
+    let mut rope = LongRope {
+        head: Position{x: 0, y: 0},
+        tails: Vec::new()
+    };
+
+    for _ in 0..9 {
+        rope.tails.push(Position{x: 0, y: 0})
+    }
+
+    let mut tail_positions : HashSet<String> = HashSet::new();
+
+    for command in commands {
+        let x_offset = command.get_x_offset();
+        let y_offset = command.get_y_offset();
+        command.print();
+        for _ in 0..command.get_steps() {
+            rope.move_head(x_offset, y_offset);
+            rope.move_tails();
+
+            let mut head_pos_string = "".to_string();
+            rope.head.get_as_string(&mut head_pos_string);
+            println!("Head -> {}", head_pos_string);
+
+
+            let mut position_string = "".to_string();
+            rope.tails[8].get_as_string(&mut position_string);
+            println!("Tail -> {}", position_string);
+            tail_positions.insert(position_string);
+
+        }
+    }
+
+    return Ok(tail_positions.len() as i32);
 }
 
 

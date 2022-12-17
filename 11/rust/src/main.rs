@@ -32,17 +32,17 @@ Monkey 6:
 **/
 
 struct Item {
-    worry_level: i32
+    worry_level: i64
 }
 
 struct Monkey {
     index: usize,
     items: Vec<Item>,
-    test_divisor: i32,
+    test_divisor: i64,
     true_target: usize,
     false_target: usize,
     operation: Operation,
-    items_inspected: i32
+    items_inspected: i64
 }
 
 impl Monkey {
@@ -67,8 +67,8 @@ impl Monkey {
 
 struct Operation {
     power: u32,
-    add: i32,
-    multiply: i32
+    add: i64,
+    multiply: i64
 }
 
 impl Operation {
@@ -92,8 +92,9 @@ impl Operation {
         print!("{} * (old^{} + {})", self.multiply, self.power, self.add)
     }
 
-    fn perform(self: &Operation, worry_level: i32) -> i32 {
-        (worry_level.pow(self.power) + self.add) * self.multiply
+    fn perform(self: &Operation, worry_level: i64) -> i64 {
+        // println!("{} * ({}^{} + {})", self.multiply, worry_level, self.power, self.add);
+        return (worry_level.pow(self.power) + self.add) * self.multiply
     }
 }
 
@@ -152,7 +153,7 @@ fn parse_monkeys(input: String) -> ResultOrErr<Monkeys> {
     return Ok(monkeys)
 }
 
-fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
+fn solve_a(input_filename: &str) -> ResultOrErr<i64> {
     let input_string = load_input(input_filename)?;
     let mut monkeys: Monkeys = parse_monkeys(input_string)?;
 
@@ -198,8 +199,8 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
         }
     }
 
-    let mut top_monkey_score = 0;
-    let mut second_monkey_score = 0;
+    let mut top_monkey_score: i64 = 0;
+    let mut second_monkey_score: i64 = 0;
 
     for monkey in &monkeys {
         if monkey.items_inspected >= top_monkey_score {
@@ -213,11 +214,61 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
     return Ok(top_monkey_score * second_monkey_score);
 }
 
-fn solve_b(input_filename: &str) -> ResultOrErr<i32> {
-    return Err("Not implemented".to_string())
+fn solve_b(input_filename: &str) -> ResultOrErr<i64> {
+    let input_string = load_input(input_filename)?;
+    let mut monkeys: Monkeys = parse_monkeys(input_string)?;
+
+    for monkey in &monkeys {
+        monkey.print();
+        println!("")
+    }
+
+    let mut base: i64 = 1;
+    for monkey in &monkeys {
+        base = base * monkey.test_divisor;
+    }
+    println!("Base = {}", base);
+
+    for round in 1..10001 {
+        for index in 0..monkeys.len() {
+            while monkeys[index].items.len() > 0 {
+                let mut item = monkeys[index].items.remove(0);
+                item.worry_level = monkeys[index].operation.perform(item.worry_level);
+
+                item.worry_level = item.worry_level % base;
+
+                let divisible = item.worry_level % monkeys[index].test_divisor == 0;
+                let target_monkey = if divisible { monkeys[index].true_target } else { monkeys[index].false_target };
+
+                monkeys[target_monkey].items.push(item);
+                monkeys[index].items_inspected += 1;
+            }
+        }
+
+        if round == 1 || round == 20 || round % 1000 == 0 {
+            println!("== After round {} ==", round);
+            for monkey in &monkeys {
+                println!("Monkey {}: inspected items {} times.", monkey.index, monkey.items_inspected);
+            }
+            println!("");
+        }
+
+    }
+
+    let mut top_monkey_score: i64 = 0;
+    let mut second_monkey_score: i64 = 0;
+
+    for monkey in &monkeys {
+        if monkey.items_inspected >= top_monkey_score {
+            second_monkey_score = top_monkey_score;
+            top_monkey_score = monkey.items_inspected
+        } else if monkey.items_inspected > second_monkey_score {
+            second_monkey_score = monkey.items_inspected
+        }
+    }
+
+    return Ok(top_monkey_score * second_monkey_score);
 }
-
-
 
 fn load_input(input_filename: &str) -> ResultOrErr<String> {
     return match fs::read_to_string(input_filename) {

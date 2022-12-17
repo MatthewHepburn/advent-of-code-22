@@ -110,8 +110,60 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
     return Ok(signal_sum);
 }
 
+struct Pixel {
+    lit: bool
+}
+
 fn solve_b(input_filename: &str) -> ResultOrErr<i32> {
-    return Err("Not implemented".to_string());
+    let input_string = load_input(input_filename)?;
+    let commands: Commands = parse_commands(input_string)?;
+
+    let mut screen: Vec<Vec<Pixel>> = Vec::new();
+    for _ in 0..6 {
+        let mut row: Vec<Pixel> = Vec::new();
+        for column in 0..40 {
+            row.push(Pixel{lit: false})
+        }
+        screen.push(row);
+    }
+
+    let mut register: i32 = 1;
+    let mut counter: i32 = 1;
+
+    let mut signal_sum = 0;
+
+    let mut row = 0;
+    for command in commands {
+        for _ in 0..command.get_duration() {
+            println!("{} - {}", counter, register);
+
+            // Do the sprite and the beam align?
+            if counter == register || counter == register + 1 || counter == register + 2 {
+                screen[row as usize][counter as usize - 1].lit = true
+            }
+
+            counter += 1;
+            if counter == 41 {
+                counter = 1;
+                row += 1;
+            }
+        }
+        register += command.get_register_delta();
+    }
+
+    for row in screen {
+        for pixel in row {
+            if pixel.lit {
+                print!("#");
+            } else {
+                print!(" ")
+            }
+        }
+        println!("")
+    }
+
+    // Actual result is what we print, but it's easier to return _something_
+    return Ok(0);
 }
 
 

@@ -120,7 +120,7 @@ impl Map {
     }
 }
 
-fn parse_map(input: String) -> ResultOrErr<Map> {
+fn parse_map(input: String, all_low_points_start: bool) -> ResultOrErr<Map> {
     let mut map = Map {
         locations: Vec::new(),
         rows: 0,
@@ -136,7 +136,11 @@ fn parse_map(input: String) -> ResultOrErr<Map> {
 
         let chars : Vec<char> = line.chars().collect();
         for char in chars {
-            let location = MapLocation::from_char(char);
+            let mut location = MapLocation::from_char(char);
+            if char == 'a' && all_low_points_start {
+                location.is_start = true;
+                location.distance = Some(0);
+            }
             row.push(location);
         }
 
@@ -150,7 +154,7 @@ fn parse_map(input: String) -> ResultOrErr<Map> {
 
 fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
     let input_string = load_input(input_filename)?;
-    let mut map: Map = parse_map(input_string)?;
+    let mut map: Map = parse_map(input_string, false)?;
 
     map.print_heights();
     println!("----------");
@@ -213,7 +217,67 @@ fn solve_a(input_filename: &str) -> ResultOrErr<i32> {
 }
 
 fn solve_b(input_filename: &str) -> ResultOrErr<i32> {
-    return Err("Not implemented".to_string())
+    let input_string = load_input(input_filename)?;
+    let mut map: Map = parse_map(input_string, true)?;
+
+    map.print_heights();
+    println!("----------");
+    map.print_distances();
+    println!("----------");
+
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for row_index in 0..map.rows {
+            for column_index in 0..map.columns {
+                if map.locations[row_index][column_index].distance == None {
+                    println!("Skipping {},{} - no distance to here", row_index, column_index);
+                    continue;
+                }
+                let this_distance = map.locations[row_index][column_index].distance.unwrap();
+                let this_height = map.locations[row_index][column_index].height;
+                for (neighbour_row, neighbour_column) in map.get_neighbours(row_index, column_index) {
+                    // println!("Map has {} rows, {} cols. Considering neighbour {}, {}", map.rows, map.columns, neighbour_row, neighbour_column);
+                    let neighbour_height = map.locations[neighbour_row][neighbour_column].height;
+                    if neighbour_height > this_height + 1 {
+                        println!("Skipping {},{} - too high", neighbour_row, neighbour_column);
+                        // Neighbour too high - can't go this way
+                        continue;
+                    }
+
+                    let neighbour_distance = map.locations[neighbour_row][neighbour_column].distance;
+                    let new_neighbour_distance = match neighbour_distance {
+                        None => this_distance + 1,
+                        Some(x) => min(x, this_distance + 1)
+                    };
+                    if neighbour_distance != Some(new_neighbour_distance) {
+                        changed = true;
+                    }
+                    map.locations[neighbour_row][neighbour_column].distance = Some(new_neighbour_distance)
+                }
+            }
+        }
+
+        println!("----------");
+        map.print_distances();
+    }
+
+
+    println!("----------");
+    map.print_distances();
+
+    for row_index in 0..map.rows {
+        for column_index in 0..map.columns {
+            if map.locations[row_index][column_index].is_end {
+                return match map.locations[row_index][column_index].distance {
+                    Some(x) => Ok(x),
+                    None => Err("Ended with no path to end".to_string())
+                }
+            }
+        }
+    }
+
+    return Err("Could not find end location".to_string())
 }
 
 fn load_input(input_filename: &str) -> ResultOrErr<String> {
